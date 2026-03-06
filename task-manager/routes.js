@@ -13,10 +13,7 @@ function sendResponse(res, statusCode, data) {
 function handleRoutes(req, res) {
   const { method, url } = req;
 
-  if (method === "OPTIONS") {
-    sendResponse(res, 200, {});
-    return;
-  }
+  if (method === "OPTIONS") { sendResponse(res, 200, {}); return; }
 
   if (method === "GET" && url === "/tasks") {
     sendResponse(res, 200, controller.getAll());

@@ -20,11 +20,12 @@ function getAll() {
 
 function create(body) {
   const { title, category, time, completed } = body;
-  if (!title || !title.trim()) return { error: "title requerido" };
+  if (!title || !title.trim()) return { error: "El título es obligatorio" };
+  if (!category || !category.trim()) return { error: "La categoría es obligatoria" };
   const newTask = {
     id: nextId++,
     title: title.trim(),
-    category: category?.trim() || "general",
+    category: category.trim(),
     time: time || "00:00",
     completed: completed ?? false
   };
