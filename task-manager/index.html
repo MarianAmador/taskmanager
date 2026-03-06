@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tareas Pendientes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f0fdf8;
+      font-family: 'Nunito', sans-serif;
+      padding: 24px 16px 60px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: clamp(24px, 6vw, 32px);
+      color: #3a9080;
+      margin-bottom: 4px;
+    }
+
+    .sub {
+      text-align: center;
+      color: #7ec8b8;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .cats {
+      text-align: center;
+      font-size: clamp(24px, 6vw, 32px);
+      margin-bottom: 16px;
+      letter-spacing: 8px;
+    }
+
+    .box {
+      background: white;
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 16px;
+      padding: clamp(16px, 4vw, 24px);
+      box-shadow: 0 4px 20px rgba(60, 150, 200, 0.1);
+      border-top: 4px solid #7ec8e0;
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "titulo titulo"
+        "cat hora"
+        "btn btn";
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 500px) {
+      .add-row {
+        grid-template-columns: 2fr 1fr 1fr auto;
+        grid-template-areas: "titulo cat hora btn";
+      }
+    }
+
+    #input    { grid-area: titulo; }
+    #category { grid-area: cat; }
+    #time     { grid-area: hora; }
+    .add      { grid-area: btn; }
+
+    input[type="text"], input[type="time"] {
+      width: 100%;
+      border: 2px solid #a8dfe8;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      outline: none;
+      color: #333;
+      background: #f5fdff;
+    }
+
+    input[type="text"]:focus, input[type="time"]:focus { border-color: #4ab8d0; }
+
+    button.add {
+      width: 100%;
+      background: #4ab8d0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.add:hover { background: #3a9080; }
+
+    ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    li.task {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      color: #444;
+      border: 1.5px solid transparent;
+      transition: opacity 0.2s;
+    }
+
+    li.task.done { opacity: 0.5; }
+
+    li.task.done .title { text-decoration: line-through; }
+
+    .check {
+      width: 18px;
+      height: 18px;
+      accent-color: #4ab8d0;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .emoji { font-size: 18px; flex-shrink: 0; }
+
+    .title {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .time {
+      font-size: 12px;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    button.del {
+      background: none;
+      border: none;
+      color: #a8d8e0;
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0 2px;
+    }
+
+    button.del:hover { color: #e05555; }
+
+    .empty {
+      text-align: center;
+      color: #7ec8b8;
+      font-size: 14px;
+      padding: 24px 0;
+    }
+
+    .error {
+      color: #e07070;
+      text-align: center;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cats">🐱🐱</div>
+  <h1>Tareas Pendientes</h1>
+  <p class="sub">Cosas pendientes por hacer</p>
+
+  <div class="box">
+    <div class="add-row">
+      <input type="text" id="input" placeholder="nueva tarea..." />
+      <input type="text" id="category" placeholder="categoría..." />
+      <input type="time" id="time" />
+      <button class="add" onclick="addTask()">+ añadir</button>
+    </div>
+    <ul id="list"></ul>
+    <p class="error" id="error" style="display:none">😿 no se pudo conectar. corre node server.js</p>
+  </div>
+
+<script>
+  const API = "http://localhost:3000/tasks";
+  const cats = ["🐱","😸","😺","🐾","😻","🐈","🐈‍⬛"];
+  const cat = () => cats[Math.floor(Math.random() * cats.length)];
+
+  const categoryColors = {};
+  const palette = [
+    { bg: "#edf7ff", border: "#a8d4f0", badge: "#4a90c0" },
+    { bg: "#f0fff8", border: "#a0e0c8", badge: "#3a9070" },
+    { bg: "#fff8e8", border: "#f0d890", badge: "#c09030" },
+    { bg: "#f8f0ff", border: "#d0a8f0", badge: "#8040c0" },
+    { bg: "#fff0f5", border: "#f0a8c0", badge: "#c04070" },
+    { bg: "#f0f8ff", border: "#90c8f0", badge: "#3060a0" },
+  ];
+  let colorIndex = 0;
+
+  function getColor(category) {
+    const key = category.toLowerCase();
+    if (!categoryColors[key]) {
+      categoryColors[key] = palette[colorIndex % palette.length];
+      colorIndex++;
+    }
+    return categoryColors[key];
+  }
+
+  async function load() {
+    try {
+      const res = await fetch(API);
+      const tasks = await res.json();
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+      if (tasks.length === 0) {
+        list.innerHTML = `<li class="empty">las gatitas están descansando, deberias hacerlo también! 😴</li>`;
+        return;
+      }
+      tasks.forEach(t => {
+        const color = getColor(t.category);
+        const li = document.createElement("li");
+        li.className = `task${t.completed ? " done" : ""}`;
+        li.style.background = color.bg;
+        li.style.borderColor = color.border;
+        li.innerHTML = `
+          <input type="checkbox" class="check" ${t.completed ? "checked" : ""} onchange="toggle(${t.id}, this.checked)" />
+          <span class="emoji">${cat()}</span>
+          <span class="title">${t.title}</span>
+          <div class="meta">
+            <span class="badge" style="background:${color.badge}">${t.category}</span>
+            <span class="time">🕐 ${t.time}</span>
+            <button class="del" onclick="del(${t.id})">✕</button>
+          </div>`;
+        list.appendChild(li);
+      });
+      document.getElementById("error").style.display = "none";
+    } catch {
+      document.getElementById("error").style.display = "block";
+    }
+  }
+
+  async function toggle(id, completed) {
+    await fetch(`${API}/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed })
+    });
+    load();
+  }
+
+  async function addTask() {
+    const input = document.getElementById("input");
+    const category = document.getElementById("category");
+    const time = document.getElementById("time");
+    const title = input.value.trim();
+    if (!title) { input.focus(); return; }
+    await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        category: category.value.trim() || "general",
+        time: time.value || "00:00",
+        completed: false
+      })
+    });
+    input.value = "";
+    category.value = "";
+    time.value = "";
+    load();
+  }
+
+  async function del(id) {
+    await fetch(`${API}/${id}`, { method: "DELETE" });
+    load();
+  }
+
+  document.getElementById("input").addEventListener("keydown", e => {
+    if (e.key === "Enter") addTask();
+  });
+
+  load();
+</script>
+</body>
+</html>
