@@ -1,32 +1,24 @@
-const http = require("http");
-const fs = require("fs");
+const express = require("express");
+const cookieParser = require("cookie-parser");
 const path = require("path");
-const { handleRoutes } = require("./routes");
+const routes = require("./routes");
 
-const server = http.createServer((req, res) => {
+const app = express();
 
-  if (req.url === "/" && req.method === "GET") {
-    const filePath = path.join(__dirname, "index.html");
+app.use(express.json());
+app.use(cookieParser());
 
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        res.writeHead(500);
-        res.end("Error cargando HTML");
-        return;
-      }
+app.use("/", routes);
 
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(data);
-    });
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
-    return;
-  }
-
-  handleRoutes(req, res);
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
 });
 
 const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log(`✅ API corriendo en http://localhost:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });

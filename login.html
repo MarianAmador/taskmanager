@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🐱 Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f0fdf8;
+      font-family: 'Nunito', sans-serif;
+      padding: 40px 16px;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+
+  <div style="text-align:center;font-size:40px;letter-spacing:8px;margin-bottom:8px">🐱🐱</div>
+  <h2 style="text-align:center;color:#3a9080;font-size:26px;font-weight:800;margin-bottom:4px">Tareas pendientes</h2>
+  <p style="text-align:center;color:#7ec8b8;font-size:13px;margin-bottom:28px">Inicia sesión para continuar ♡</p>
+
+  <div style="max-width:380px;margin:0 auto;background:white;border-radius:16px;padding:28px 24px;box-shadow:0 4px 20px rgba(60,150,200,0.12);border-top:4px solid #7ec8e0">
+
+    <div style="display:flex;background:#f0fdf8;border-radius:10px;padding:4px;margin-bottom:24px">
+      <button onclick="switchTab('login')" id="tab-btn-login" style="flex:1;padding:8px;border:none;background:white;border-radius:8px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:#3a9080;cursor:pointer">Iniciar sesión</button>
+      <button onclick="switchTab('register')" id="tab-btn-register" style="flex:1;padding:8px;border:none;background:transparent;border-radius:8px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:#7ec8b8;cursor:pointer">Registrarse</button>
+    </div>
+
+    <div id="tab-login">
+      <p style="font-size:12px;font-weight:800;color:#5ab0a0;margin-bottom:5px">USUARIO</p>
+      <input id="login-user" type="text" placeholder="tu usuario..." style="width:100%;border:2px solid #a8dfe8;border-radius:10px;padding:10px 14px;font-family:Nunito,sans-serif;font-size:14px;margin-bottom:14px;outline:none;background:#f5fdff" />
+      <p style="font-size:12px;font-weight:800;color:#5ab0a0;margin-bottom:5px">CONTRASEÑA</p>
+      <input id="login-pass" type="password" placeholder="tu contraseña..." style="width:100%;border:2px solid #a8dfe8;border-radius:10px;padding:10px 14px;font-family:Nunito,sans-serif;font-size:14px;margin-bottom:14px;outline:none;background:#f5fdff" />
+      <button onclick="doLogin()" style="width:100%;background:#4ab8d0;color:white;border:none;border-radius:10px;padding:12px;font-family:Nunito,sans-serif;font-weight:800;font-size:15px;cursor:pointer">Entrar 🐾</button>
+    </div>
+
+    <div id="tab-register" style="display:none">
+      <p style="font-size:12px;font-weight:800;color:#5ab0a0;margin-bottom:5px">USUARIO</p>
+      <input id="reg-user" type="text" placeholder="elige un usuario..." style="width:100%;border:2px solid #a8dfe8;border-radius:10px;padding:10px 14px;font-family:Nunito,sans-serif;font-size:14px;margin-bottom:14px;outline:none;background:#f5fdff" />
+      <p style="font-size:12px;font-weight:800;color:#5ab0a0;margin-bottom:5px">CONTRASEÑA</p>
+      <input id="reg-pass" type="password" placeholder="mín. 4 caracteres..." style="width:100%;border:2px solid #a8dfe8;border-radius:10px;padding:10px 14px;font-family:Nunito,sans-serif;font-size:14px;margin-bottom:14px;outline:none;background:#f5fdff" />
+      <button onclick="doRegister()" style="width:100%;background:#4ab8d0;color:white;border:none;border-radius:10px;padding:12px;font-family:Nunito,sans-serif;font-weight:800;font-size:15px;cursor:pointer">Crear cuenta 😸</button>
+    </div>
+
+    <p id="auth-msg" style="text-align:center;font-size:13px;margin-top:12px;min-height:20px;color:#e07070"></p>
+  </div>
+
+<script>
+  function switchTab(tab) {
+    document.getElementById("tab-login").style.display    = tab === "login"    ? "" : "none";
+    document.getElementById("tab-register").style.display = tab === "register" ? "" : "none";
+    document.getElementById("tab-btn-login").style.background    = tab === "login"    ? "white" : "transparent";
+    document.getElementById("tab-btn-register").style.background = tab === "register" ? "white" : "transparent";
+    document.getElementById("tab-btn-login").style.color    = tab === "login"    ? "#3a9080" : "#7ec8b8";
+    document.getElementById("tab-btn-register").style.color = tab === "register" ? "#3a9080" : "#7ec8b8";
+    document.getElementById("auth-msg").textContent = "";
+  }
+
+  async function doLogin() {
+    const username = document.getElementById("login-user").value.trim();
+    const password = document.getElementById("login-pass").value;
+    if (!username || !password) { showMsg("Completa todos los campos 😿"); return; }
+
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+    if (!res.ok) { showMsg(data.error); return; }
+    window.location.href = "/";
+  }
+
+  async function doRegister() {
+    const username = document.getElementById("reg-user").value.trim();
+    const password = document.getElementById("reg-pass").value;
+    if (!username || !password) { showMsg("Completa todos los campos 😿"); return; }
+
+    const res = await fetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+    if (!res.ok) { showMsg(data.error); return; }
+    window.location.href = "/";
+  }
+
+  function showMsg(msg) {
+    document.getElementById("auth-msg").textContent = msg;
+  }
+</script>
+</body>
+</html>

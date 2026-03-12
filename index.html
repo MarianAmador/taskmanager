@@ -190,6 +190,7 @@
   <h1>Tareas pendientes</h1>
   <p class="sub">Cosas por hacer ♡</p>
 
+  
   <div class="box">
     <div class="add-row">
       <input type="text" id="input" placeholder="nueva tarea..." />
@@ -199,6 +200,12 @@
     </div>
     <ul id="list"></ul>
     <p class="error" id="error" style="display:none">😿 no se pudo conectar. corre node server.js</p>
+  </div>
+
+    <div style="text-align:right;max-width:600px;margin:8px auto 0">
+    <button onclick="doLogout()" style="background:none;border:1.5px solid #f0a8a8;border-radius:20px;padding:4px 12px;font-family:Nunito,sans-serif;font-size:12px;font-weight:700;color:#c07070;cursor:pointer">
+      Cerrar sesión
+    </button>
   </div>
 
 <script>
@@ -237,83 +244,97 @@
   }
 
   async function load() {
-    try {
-      const res = await fetch(API);
-      const tasks = await res.json();
-      const list = document.getElementById("list");
-      list.innerHTML = "";
-      if (tasks.length === 0) {
-        list.innerHTML = `<li class="empty">Sin pendientes, descansa! 😴</li>`;
-        return;
-      }
-      tasks.forEach(t => {
-        const color = getColor(t.category);
-        const li = document.createElement("li");
-        li.className = `task${t.completed ? " done" : ""}`;
-        li.style.background = color.bg;
-        li.style.borderColor = color.border;
-        li.innerHTML = `
-          <input type="checkbox" class="check" ${t.completed ? "checked" : ""} onchange="toggle(${t.id}, this.checked)" />
-          <span class="emoji">${cat()}</span>
-          <span class="title">${t.title}</span>
-          <div class="meta">
-            <span class="badge" style="background:${color.badge}">${t.category}</span>
-            <span class="time">🕐 ${t.time}</span>
-            <button class="del" onclick="del(${t.id})">✕</button>
-          </div>`;
-        list.appendChild(li);
-      });
-      document.getElementById("error").style.display = "none";
-    } catch {
-      document.getElementById("error").style.display = "block";
+  try {
+    const res = await fetch(API, { credentials: "same-origin" });
+    if (res.status === 401) { window.location.href = "/login"; return; }
+    const tasks = await res.json();
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    if (tasks.length === 0) {
+      list.innerHTML = `<li class="empty">Sin pendientes, descansa! 😴</li>`;
+      return;
     }
-  }
-
-  async function toggle(id, completed) {
-    await fetch(`${API}/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed })
+    tasks.forEach(t => {
+      const color = getColor(t.category);
+      const li = document.createElement("li");
+      li.className = `task${t.completed ? " done" : ""}`;
+      li.style.background = color.bg;
+      li.style.borderColor = color.border;
+      li.innerHTML = `
+        <input type="checkbox" class="check" ${t.completed ? "checked" : ""} onchange="toggle(${t.id}, this.checked)" />
+        <span class="emoji">${cat()}</span>
+        <span class="title">${t.title}</span>
+        <div class="meta">
+          <span class="badge" style="background:${color.badge}">${t.category}</span>
+          <span class="time">🕐 ${t.time}</span>
+          <button class="del" onclick="del(${t.id})">✕</button>
+        </div>`;
+      list.appendChild(li);
     });
-    load();
+    document.getElementById("error").style.display = "none";
+  } catch {
+    document.getElementById("error").style.display = "block";
   }
+}
 
-  async function addTask() {
-    const input = document.getElementById("input");
-    const category = document.getElementById("category");
-    const time = document.getElementById("time");
-    const title = input.value.trim();
-    const cat = category.value.trim();
+async function toggle(id, completed) {
+  await fetch(`${API}/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ completed }),
+    credentials: "same-origin"
+  });
+  load();
+}
 
-    if (!title) { markError(input, "⚠️ el título es obligatorio"); return; }
-    if (!cat) { markError(category, "⚠️ obligatoria"); return; }
+async function addTask() {
+  const input = document.getElementById("input");
+  const category = document.getElementById("category");
+  const time = document.getElementById("time");
+  const title = input.value.trim();
+  const cat = category.value.trim();
 
-    await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        category: cat,
-        time: time.value || "00:00",
-        completed: false
-      })
-    });
-    input.value = "";
-    category.value = "";
-    time.value = "";
-    load();
-  }
+  if (!title) { markError(input, "⚠️ el título es obligatorio"); return; }
+  if (!cat) { markError(category, "⚠️ obligatoria"); return; }
 
-  async function del(id) {
-    await fetch(`${API}/${id}`, { method: "DELETE" });
-    load();
-  }
+  await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, category: cat, time: time.value || "00:00", completed: false }),
+    credentials: "same-origin"
+  });
+  input.value = "";
+  category.value = "";
+  time.value = "";
+  load();
+}
+
+
+ async function del(id) {
+  await fetch(`${API}/${id}`, { method: "DELETE", credentials: "same-origin" });
+  load();
+}
 
   document.getElementById("input").addEventListener("keydown", e => {
     if (e.key === "Enter") addTask();
   });
 
+  async function doLogout() {
+  await fetch("/auth/logout", { method: "POST", credentials: "same-origin" });
+  window.location.href = "/login";
+}
+
+
+async function checkSession() {
+  const res = await fetch("/auth/me", { credentials: "same-origin" });
+  if (!res.ok) {
+    window.location.href = "/login";
+    return;
+  }
   load();
+}
+checkSession();
+
 </script>
 </body>
 

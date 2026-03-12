@@ -1,61 +1,33 @@
+const express = require("express");
+const router = express.Router();
 const controller = require("./taskController");
+const auth = require("./authController");
 
-function sendResponse(res, statusCode, data) {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, PATCH, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  });
-  res.end(JSON.stringify(data));
-}
+router.post("/auth/register", auth.register);
+router.post("/auth/login", auth.login);
+router.post("/auth/logout", auth.logout);
+router.get("/auth/me", auth.verifyToken, auth.me);
 
-function handleRoutes(req, res) {
-  const { method, url } = req;
+router.get("/tasks", auth.verifyToken, (req, res) => {
+  res.json(controller.getAll());
+});
 
-  if (method === "OPTIONS") { sendResponse(res, 200, {}); return; }
+router.post("/tasks", auth.verifyToken, (req, res) => {
+  const result = controller.create(req.body);
+  if (result.error) return res.status(400).json(result);
+  res.status(201).json(result);
+});
 
-  if (method === "GET" && url === "/tasks") {
-    sendResponse(res, 200, controller.getAll());
-    return;
-  }
+router.patch("/tasks/:id", auth.verifyToken, (req, res) => {
+  const task = controller.update(parseInt(req.params.id), req.body);
+  if (!task) return res.status(404).json({ error: "no encontrada" });
+  res.json(task);
+});
 
-  if (method === "POST" && url === "/tasks") {
-    let body = "";
-    req.on("data", chunk => { body += chunk.toString(); });
-    req.on("end", () => {
-      try {
-        const result = controller.create(JSON.parse(body));
-        if (result.error) { sendResponse(res, 400, result); return; }
-        sendResponse(res, 201, result);
-      } catch { sendResponse(res, 400, { error: "JSON inválido" }); }
-    });
-    return;
-  }
+router.delete("/tasks/:id", auth.verifyToken, (req, res) => {
+  const deleted = controller.remove(parseInt(req.params.id));
+  if (!deleted) return res.status(404).json({ error: "no encontrada" });
+  res.json({ message: "eliminada", task: deleted });
+});
 
-  const matchId = url.match(/^\/tasks\/(\d+)$/);
-
-  if (method === "PATCH" && matchId) {
-    let body = "";
-    req.on("data", chunk => { body += chunk.toString(); });
-    req.on("end", () => {
-      try {
-        const task = controller.update(parseInt(matchId[1]), JSON.parse(body));
-        if (!task) { sendResponse(res, 404, { error: "no encontrada" }); return; }
-        sendResponse(res, 200, task);
-      } catch { sendResponse(res, 400, { error: "JSON inválido" }); }
-    });
-    return;
-  }
-
-  if (method === "DELETE" && matchId) {
-    const deleted = controller.remove(parseInt(matchId[1]));
-    if (!deleted) { sendResponse(res, 404, { error: "no encontrada" }); return; }
-    sendResponse(res, 200, { message: "eliminada", task: deleted });
-    return;
-  }
-
-  sendResponse(res, 404, { error: "ruta no encontrada" });
-}
-
-module.exports = { handleRoutes };
+module.exports = router;
